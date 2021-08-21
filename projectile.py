@@ -21,12 +21,19 @@ class Bullet(Projectile):
         super().__init__(x, y, angle, 50)
         self.lifeSpan = 60
     
-    def update(self):
+    def update(self, blocks):
         super().update()
         self.lifeSpan -= 1
+        self.collide(blocks)
 
     def draw(self, screen):
         pg.draw.line(screen, (255,200,0), self.tPos - self.vel, self.tPos, 5)
+
+    def collide(self, blocks):
+        for block in blocks:
+            # if block.image.get_rect().collidepoint((self.pos.x, self.pos.y)):
+            if self.pos.x > block.pos.x and self.pos.x < block.pos.x + block.width and self.pos.y > block.pos.y and self.pos.y < block.pos.y + block.height:
+                self.lifeSpan = 0
 
 class Hook(Projectile):
     def __init__(self, x, y, angle):

@@ -8,7 +8,7 @@ class App:
         pg.init()
         self.size = self.width, self.height = 800, 480
         self.screen = pg.display.set_mode(self.size)
-        pg.display.set_caption('Platformer')
+        pg.display.set_caption('blocker')
 
     def run(self) -> None:
         self.setup()
@@ -21,21 +21,27 @@ class App:
             
     def setup(self) -> None:
         self.player = Player(100, 300)
-        self.platforms = generateMap('levels/level.txt')
+        # self.blocks = generateMap('levels/level.txt')
+        self.blocks = generateTerrain(100, 15)
+        self.camera = pg.Vector2(0, 0)
+        self.background = pg.image.load('background.png').convert()
         
     def main_loop(self) -> None:
-        # set background to light blue
-        self.screen.fill((100, 150, 255))
+
+        # set background
+        self.screen.blit(self.background, (0, 0))
         
         # update player
         self.player.update()
-        self.player.useWeapon(self.platforms)
+        self.player.useWeapon(self.blocks)
 
-        visiblePlatforms = [platform for platform in self.platforms if platform.isVisible(self.width, self.height)]
-        # collision with platforms
+        for block in self.blocks:
+            block.translate(self.camera)
+        self.visibleBlocks = [block for block in self.blocks if block.isVisible(self.width, self.height)]
+        # collision with blocks
         self.player.onGround = False
-        for platform in visiblePlatforms:
-            if self.player.collide(platform):
+        for block in self.visibleBlocks:
+            if self.player.collide(block):
                 self.player.onGround = True
 
         self.player.jump()
@@ -43,20 +49,27 @@ class App:
         if self.player.pos.y > 1000:
             self.player.respawn()
 
+        self.camera = self.player.pos - self.player.tPos
         # draw player
         self.player.translate(pg.Vector2(self.player.pos.x - self.width/2 + self.player.width, self.player.pos.y - 300))
         self.player.draw(self.screen)
 
-        # draw platforms
-        for platform in self.platforms:
-            platform.translate(pg.Vector2(self.player.pos.x - self.player.tPos.x, self.player.pos.y - self.player.tPos.y))
-            if platform.isVisible(self.width, self.height):
-                platform.draw(self.screen)
+        # draw blocks
+        for block in self.visibleBlocks:
+            block.draw(self.screen)
 
     def handle_events(self):
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 sys.exit()
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_e:
+                    self.player.weaponIndex = (self.player.weaponIndex + 1) % len(self.player.inventory)
+                    self.player.weapon = self.player.inventory[self.player.weaponIndex]
+            if event.type == pg.MOUSEBUTTONDOWN:
+                if event.button == pg.BUTTON_RIGHT:
+                    block = self.player.placeBlock(self.visibleBlocks)
+                    if block: self.blocks.append(block)
     
     def user_interface(self):
         self.player.drawHud(self.screen)

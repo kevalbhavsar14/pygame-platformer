@@ -1,5 +1,6 @@
 import pygame as pg
 from weapon import *
+from block import Block
 
 class Player:
     def __init__(self, x, y):
@@ -23,8 +24,9 @@ class Player:
         self.image = pg.transform.scale(self.image, (self.width, self.height))
 
         # equipment
-        self.inventory = [Gun(), Grapple()]
-        self.weapon = self.inventory[1]
+        self.inventory = [Gun(), Grapple(), None]
+        self.weaponIndex = 0
+        self.weapon = self.inventory[self.weaponIndex]
         
         # states
         self.onGround = False
@@ -61,7 +63,7 @@ class Player:
         if self.takingDmg: image.fill((255,0,0))
         self.takingDmg = False
         screen.blit(image, (self.tPos.x, self.tPos.y))
-        self.weapon.draw(screen, self.aim, self.pos, self.tPos)
+        if self.weapon: self.weapon.draw(screen, self.aim, self.pos, self.tPos)
         
     def translate(self, point):
         self.tPos = self.pos - point
@@ -96,8 +98,8 @@ class Player:
             onGround = True
             self.fallHeight = 0
         # bottom
-        if self.pos.y <= object.pos.y + object.height and self.pos.y > object.pos.y + object.height - 20 and self.pos.x + self.width > object.pos.x + 5 and self.pos.x < object.pos.x + object.width - 5:
-            self.pos.y = object.pos.y + object.height + 1
+        if self.pos.y <= object.pos.y + object.height - 10 and self.pos.y > object.pos.y + object.height - 20 and self.pos.x + self.width > object.pos.x + 5 and self.pos.x < object.pos.x + object.width - 5:
+            self.pos.y = object.pos.y + object.height
             self.vel.y = 0
         # left
         if self.pos.x + self.width >= object.pos.x and self.pos.x + self.width < object.pos.x + 20 and self.pos.y > object.pos.y - self.height and self.pos.y < object.pos.y + object.height:
@@ -151,8 +153,19 @@ class Player:
             self.takingDmg = False
     
     def useWeapon(self, blocks):
-        if pg.mouse.get_pressed()[0]:
-            self.weapon.fire(self.pos.x + self.width/2, self.pos.y + self.height/2, self.aim)
-        vel = self.weapon.update(self.pos, blocks)
-        if vel:
-            self.pos += vel
+        if self.weapon:
+            if pg.mouse.get_pressed()[0]:
+                self.weapon.fire(self.pos.x + self.width/2, self.pos.y + self.height/2, self.aim)
+            vel = self.weapon.update(self.pos, blocks)
+            if vel:
+                self.pos += vel
+    
+    def placeBlock(self, blocks):
+        x, y = pg.mouse.get_pos()
+        x += self.pos.x - self.tPos.x
+        y += self.pos.y - self.tPos.y
+        x, y = (x // 32) * 32, (y // 32) * 32
+        for block in blocks:
+            if block.pos.x == x and block.pos.y == y:
+                return None
+        return Block(x, y, 32, 32, 'metal')

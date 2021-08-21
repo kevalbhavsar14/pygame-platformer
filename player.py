@@ -10,7 +10,7 @@ class Player:
         self.spawn = pg.Vector2(x, y)
         self.pos = pg.Vector2(x, y)
         self.vel = pg.Vector2(0, 0)
-        self.acc = pg.Vector2(0, 1)
+        self.acc = pg.Vector2(0, 0)
         self.tPos = pg.Vector2(400 - self.width/2, 300)
         
         # textures
@@ -44,49 +44,18 @@ class Player:
         maxVel = 20
         self.pos += self.vel
         self.vel += self.acc
-        self.fallHeight += self.acc.y
-        if self.onGround: self.fallHeight = 0
+        self.acc.update(0, 0)
         if self.vel.length() > maxVel:
             self.vel.scale_to_length(maxVel)
-        if self.fallHeight < 0: self.fallHeight = 0
         if self.health <= 0:
             self.respawn()
         
         self.aim = (pg.Vector2(pg.mouse.get_pos()) - (self.tPos + pg.Vector2(0,30))).angle_to(pg.Vector2(0,0))
 
         self.move()
-
-    def draw(self, screen):
-        self.animation()
-
-        image = self.image.copy() if self.aim < 90 and self.aim > -90 else pg.transform.flip(self.image, True, False)
-        if self.takingDmg: image.fill((255,0,0))
-        self.takingDmg = False
-        screen.blit(image, (self.tPos.x, self.tPos.y))
-        if self.weapon: self.weapon.draw(screen, self.aim, self.pos, self.tPos)
-        
-    def translate(self, point):
-        self.tPos = self.pos - point
     
-    def animation(self):
-        if not self.onGround:
-            self.image = self.walk[0]
-        elif self.isWalking:
-            self.image = self.walk[int(self.walkIx)]
-            self.walkIx += 0.2 if self.isSprinting else 0.1
-            if self.walkIx >= len(self.walk):
-                self.walkIx = 0
-        else:
-            self.image = self.idle
-    
-    def drawHud(self, screen):
-        # health
-        bg = pg.Surface((200,20))
-        bg.fill((100,100,100))
-        hp = pg.Surface((self.health * 10, 20))
-        hp.fill((255,50,50))
-        screen.blit(bg, (10,10))
-        screen.blit(hp, (10,10))
+    def applyForce(self, force):
+        self.acc += force
     
     def collide(self, object):
         onGround = False
@@ -156,9 +125,9 @@ class Player:
         if self.weapon:
             if pg.mouse.get_pressed()[0]:
                 self.weapon.fire(self.pos.x + self.width/2, self.pos.y + self.height/2, self.aim)
-            vel = self.weapon.update(self.pos, blocks)
-            if vel:
-                self.pos += vel
+            pull = self.weapon.update(self.pos, blocks)
+            if pull:
+                self.applyForce(pull)
     
     def placeBlock(self, blocks):
         x, y = pg.mouse.get_pos()
@@ -169,3 +138,35 @@ class Player:
             if block.pos.x == x and block.pos.y == y:
                 return None
         return Block(x, y, 32, 32, 'metal')
+
+    def draw(self, screen):
+        self.animation()
+
+        image = self.image.copy() if self.aim < 90 and self.aim > -90 else pg.transform.flip(self.image, True, False)
+        if self.takingDmg: image.fill((255,0,0))
+        self.takingDmg = False
+        screen.blit(image, (self.tPos.x, self.tPos.y))
+        if self.weapon: self.weapon.draw(screen, self.aim, self.pos, self.tPos)
+        
+    def translate(self, point):
+        self.tPos = self.pos - point
+    
+    def animation(self):
+        if not self.onGround:
+            self.image = self.walk[0]
+        elif self.isWalking:
+            self.image = self.walk[int(self.walkIx)]
+            self.walkIx += 0.2 if self.isSprinting else 0.1
+            if self.walkIx >= len(self.walk):
+                self.walkIx = 0
+        else:
+            self.image = self.idle
+    
+    def drawHud(self, screen):
+        # health
+        bg = pg.Surface((200,20))
+        bg.fill((100,100,100))
+        hp = pg.Surface((self.health * 10, 20))
+        hp.fill((255,50,50))
+        screen.blit(bg, (10,10))
+        screen.blit(hp, (10,10))

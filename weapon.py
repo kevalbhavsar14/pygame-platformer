@@ -74,7 +74,7 @@ class Grapple(Weapon):
             if self.hook.isStuck:
                 vel = pg.Vector2(self.hook.pos - pos)
                 vel.scale_to_length(20)
-                if d < 50  or pg.key.get_pressed()[pg.K_s]:
+                if d < 100 or pg.key.get_pressed()[pg.K_s]:
                     self.hook = None
                 return vel
             return None

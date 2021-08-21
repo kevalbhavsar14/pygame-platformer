@@ -21,17 +21,30 @@ class App:
             
     def setup(self) -> None:
         self.player = Player(100, 300)
-        # self.blocks = generateMap('levels/level.txt')
+        self.gravity = pg.Vector2(0, 1)
+        
         self.blocks = generateTerrain(100, 15)
         self.camera = pg.Vector2(0, 0)
-        self.background = pg.image.load('background.png').convert()
-        
+
+        # backgournd
+        sky = pg.transform.scale(pg.image.load('background/sky.png').convert_alpha(), (self.width, self.height))
+        mountains = pg.transform.scale(pg.image.load('background/mountains.png').convert_alpha(), (self.width, self.height))
+        ground = pg.transform.scale(pg.image.load('background/ground.png').convert_alpha(), (self.width, self.height))
+        overlay = pg.transform.scale(pg.image.load('background/overlay.png').convert_alpha(), (self.width, self.height))
+        self.background = {'sky':sky, 'mountains':mountains, 'ground':ground, 'overlay':overlay}
+
     def main_loop(self) -> None:
 
         # set background
-        self.screen.blit(self.background, (0, 0))
+        self.screen.blit(self.background['sky'], (0, 0))
+        self.screen.blit(self.background['mountains'], (-(self.camera.x / 10) % self.width, 0))
+        self.screen.blit(self.background['mountains'], (-(self.camera.x / 10) % self.width - self.width, 0))
+        self.screen.blit(self.background['ground'], (-(self.camera.x / 5) % self.width, 0))
+        self.screen.blit(self.background['ground'], (-(self.camera.x / 5) % self.width - self.width, 0))
+        self.screen.blit(self.background['overlay'], (0, 0))
         
         # update player
+        self.player.applyForce(self.gravity)
         self.player.update()
         self.player.useWeapon(self.blocks)
 
